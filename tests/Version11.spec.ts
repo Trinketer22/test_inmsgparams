@@ -588,7 +588,7 @@ describe('Version11', () => {
                             console.log("Test storage");
                         }
                         */
-                        return testCase === sendIhr ? remainingVal == origMsgValue + toNano('0.0006') 
+                        return testCase === sendIhr ? remainingVal == origMsgValue
                             : remainingVal < origMsgValue && 
                             remainingVal == toNano('0.2') + origMsgValue - storageCollected(testTx) 
                     }
