@@ -428,11 +428,20 @@ describe('Version11', () => {
 
     it('should reflect original message value correctly', async () => {
         const stateBefore = blockchain.snapshot();
-        const sendIhr = async (mode: InMsgParams) => {
+        const testRandom = async (mode: InMsgParams) => {
+            return await deployer.send({
+                bounce: false,
+                to: version11.address,
+                body: Version11.testMsg(mode),
+                value: BigInt(getRandomInt(1, 100_000)) * toNano('0.01') + BigInt(getRandomInt(1, 10 ** 8))
+            });
+        }
+
+        const sendIhr = async (mode: InMsgParams, ihrVal: bigint) => {
                 return await deployer.sendMessages([{
                 info: {
-                    value: {coins: toNano('1')},
-                    ihrFee: 1n,
+                    value: {coins: BigInt(getRandomInt(1, 100_000)) * toNano('0.01') + BigInt(getRandomInt(1, 10 ** 8))},
+                    ihrFee: ihrVal,
                     ihrDisabled: false,
                     type: 'internal',
                     createdAt: blockchain.now!,
@@ -460,10 +469,11 @@ describe('Version11', () => {
             });
         };
 
-
+        const sendIhrOne = async (mode: InMsgParams) => await sendIhr(mode, 1n);
+        const sendIhrRandom = async (mode: InMsgParams) => await sendIhr(mode, BigInt(getRandomInt(2, 10 ** 9)));
 
         for(let mode of [InMsgParams.all, InMsgParams.orig_value]) {
-            for(let testCase of [sendIhr, testStorage] ) {
+            for(let testCase of [testRandom, sendIhrOne, sendIhrRandom, testStorage] ) {
                 const res = await testCase(mode);
 
                 const testTx = findTransactionRequired(res.transactions, {
@@ -504,11 +514,20 @@ describe('Version11', () => {
 
     it('should reflect actual message remaining balance correctly', async () => {
         const stateBefore = blockchain.snapshot();
-        const sendIhr = async (mode: InMsgParams) => {
+
+        const testRandom = async (mode: InMsgParams) => {
+            return await deployer.send({
+                bounce: false,
+                to: version11.address,
+                body: Version11.testMsg(mode),
+                value: BigInt(getRandomInt(1, 100_000)) * toNano('0.01') + BigInt(getRandomInt(1, 10 ** 8))
+            });
+        }
+        const sendIhr = async (mode: InMsgParams, ihrVal: bigint) => {
                 return await deployer.sendMessages([{
                 info: {
-                    value: {coins: toNano('1')},
-                    ihrFee: 1n,
+                    value: {coins: BigInt(getRandomInt(1, 100_000)) * toNano('0.01') + BigInt(getRandomInt(1, 10 ** 8))},
+                    ihrFee: ihrVal,
                     ihrDisabled: false,
                     type: 'internal',
                     createdAt: blockchain.now!,
@@ -521,6 +540,9 @@ describe('Version11', () => {
                 body: Version11.testMsg(mode)
             }],SendMode.PAY_GAS_SEPARATELY);
         }
+
+        const sendIhrOne = async (mode: InMsgParams) => await sendIhr(mode, 1n);
+        const sendIhrRandom = async (mode: InMsgParams) => await sendIhr(mode, BigInt(getRandomInt(2, 10 ** 9)));
 
         const testStorage = async (mode: InMsgParams) => {
             blockchain.now = Math.floor(Date.now() / 1000);
@@ -537,7 +559,7 @@ describe('Version11', () => {
         };
 
         for(let mode of [InMsgParams.all, InMsgParams.value]) {
-            for(let testCase of [sendIhr, testStorage] ) {
+            for(let testCase of [testRandom, sendIhrOne, sendIhrRandom, testStorage] ) {
                 const res = await testCase(mode);
 
                 const testTx = findTransactionRequired(res.transactions, {
@@ -572,7 +594,7 @@ describe('Version11', () => {
                             console.log("Test storage");
                         }
                         */
-                        return testCase === sendIhr ? remainingVal == origMsgValue
+                        return testCase !== testStorage ? remainingVal == origMsgValue
                             : remainingVal < origMsgValue && 
                             remainingVal == toNano('0.2') + origMsgValue - storageCollected(testTx) 
                     }
