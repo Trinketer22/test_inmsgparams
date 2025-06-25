@@ -1,4 +1,4 @@
-import { Blockchain, internal, SandboxContract, TreasuryContract } from '@ton/sandbox';
+import { Blockchain, internal, SandboxContract, setGlobalVersion, TreasuryContract } from '@ton/sandbox';
 import { beginCell, Cell, toNano, Dictionary, storeStateInit, loadStateInit, SendMode, ExtraCurrency, external, ExternalAddress } from '@ton/core';
 import { InMsgParams, parseEc, Version11 } from '../wrappers/Version11';
 import '@ton/test-utils';
@@ -22,23 +22,7 @@ describe('Version11', () => {
 
         blockchain.now = 100;
 
-        const config = Dictionary.loadDirect(
-            Dictionary.Keys.Int(32),
-            Dictionary.Values.Cell(),
-            blockchain.config
-        );
-
-        const param8 = config.get(8)!.beginParse();
-        const tag = param8.loadUint(8);
-        const curVersion = param8.loadUint(32);
-        if (curVersion != requiredVersion) {
-            console.log(`Version ${curVersion} forcing version ${requiredVersion}`);
-            config.set(
-                8,
-                beginCell().storeUint(tag, 8).storeUint(requiredVersion, 32).storeSlice(param8).endCell()
-            );
-            blockchain.setConfig(beginCell().storeDictDirect(config).endCell());
-        }
+        blockchain.setConfig(setGlobalVersion(blockchain.config, 11));
 
         deployer = await blockchain.treasury('deployer');
 
